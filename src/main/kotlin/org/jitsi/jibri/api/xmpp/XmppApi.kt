@@ -31,6 +31,7 @@ import org.jitsi.jibri.selenium.CallParams
 import org.jitsi.jibri.service.AppData
 import org.jitsi.jibri.service.JibriServiceStatusHandler
 import org.jitsi.jibri.service.ServiceParams
+import org.jitsi.jibri.service.impl.GenericRtmp
 import org.jitsi.jibri.service.impl.SipGatewayServiceParams
 import org.jitsi.jibri.service.impl.StreamingParams
 import org.jitsi.jibri.service.impl.YouTube
@@ -53,6 +54,7 @@ import org.jxmpp.jid.impl.JidCreate
 import java.util.logging.Logger
 
 private class UnsupportedIqMode(val iqMode: String) : Exception()
+private class UnsupportedStreamServiceConfiguration(val msg: String) : Exception(msg)
 
 /**
  * [XmppApi] connects to XMPP MUCs according to the given [XmppEnvironmentConfig]s (which are
@@ -271,7 +273,7 @@ class XmppApi(
             xmppEnvironment.xmppDomain
         )
         val appData = startIq.appData?.let {
-            jacksonObjectMapper().readValue<AppData>(startIq.appData)
+            jacksonObjectMapper().readValue<AppData>(it)
         }
         val serviceParams = ServiceParams(xmppEnvironment.usageTimeoutMins, appData)
         val callParams = CallParams(callUrlInfo)
@@ -287,7 +289,18 @@ class XmppApi(
                 )
             }
             JibriMode.STREAM -> {
-                val streamingServiceInfo = YouTube(startIq.streamId, startIq.youtubeBroadcastId)
+                val streamingServiceInfo = when {
+                    startIq.streamId != null -> {
+                        // startIq.streamId (due to legacy reasons) is used for YouTube streams
+                        YouTube(startIq.streamId, startIq.youtubeBroadcastId)
+                    }
+                    appData?.rtmpUrl != null -> {
+                        // AppData.rtmpUrl is checked if the YouTube streamId is null to support other
+                        // services
+                        GenericRtmp(appData.rtmpUrl)
+                    }
+                    else -> throw UnsupportedStreamServiceConfiguration("no service url set")
+                }
                 jibriManager.startStreaming(
                     serviceParams,
                     StreamingParams(
