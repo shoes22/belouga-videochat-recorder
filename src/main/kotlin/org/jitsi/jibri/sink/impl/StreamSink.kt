@@ -19,14 +19,36 @@ package org.jitsi.jibri.sink.impl
 
 import org.jitsi.jibri.sink.Sink
 
+private const val DEFAULT_STREAMING_MAX_BITRATE = 2976
+
 /**
  * [StreamSink] represents a sink which will write to a network stream
  */
-class StreamSink(val url: String, val streamingMaxBitrate: Int, val streamingBufSize: Int) : Sink {
-    override val path: String = url
+abstract class StreamSink(
+    rtmpUrl: String,
+    streamingMaxBitrate: Int = DEFAULT_STREAMING_MAX_BITRATE,
+    streamingBufSize: Int = 2 * streamingMaxBitrate
+) : Sink {
+    override val path: String = rtmpUrl
     override val format: String = "flv"
     override val options: Array<String> = arrayOf(
         "-maxrate", "${streamingMaxBitrate}k",
         "-bufsize", "${streamingBufSize}k"
     )
 }
+
+class YouTubeStreamSink(
+    streamKey: String,
+    streamingMaxBitrate: Int = DEFAULT_STREAMING_MAX_BITRATE,
+    streamingBufSize: Int = 2 * streamingMaxBitrate
+) : StreamSink("$YOUTUBE_BASE_URL/$streamKey", streamingMaxBitrate, streamingBufSize) {
+    companion object {
+        private const val YOUTUBE_BASE_URL = "rtmp://a.rtmp.youtube.com/live2"
+    }
+}
+
+class GenericRtmpStreamSink(
+    rtmpUrl: String,
+    streamingMaxBitrate: Int = DEFAULT_STREAMING_MAX_BITRATE,
+    streamingBufSize: Int = 2 * streamingMaxBitrate
+) : StreamSink(rtmpUrl, streamingMaxBitrate, streamingBufSize)
