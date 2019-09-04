@@ -25,6 +25,7 @@ import org.jitsi.jibri.selenium.JibriSelenium
 import org.jitsi.jibri.selenium.RECORDING_URL_OPTIONS
 import org.jitsi.jibri.service.JibriService
 import org.jitsi.jibri.sink.Sink
+import org.jitsi.jibri.sink.impl.GenericRtmpStreamSink
 import org.jitsi.jibri.sink.impl.YouTubeStreamSink
 import org.jitsi.jibri.status.ComponentState
 import org.jitsi.jibri.status.ErrorScope
@@ -49,14 +50,19 @@ data class StreamingParams(
      */
     val callLoginParams: XmppCredentials,
     /**
-     * The YouTube stream key to use for this stream
+     * Needed information for the service we'll be streaming to
      */
-    val youTubeStreamKey: String,
-    /**
-     * The YouTube broadcast ID for this stream, if we have it
-     */
-    val youTubeBroadcastId: String? = null
+    val streamingServiceInfo: StreamingServiceInfo
 )
+
+/**
+ * Needed information for the service we'll be streaming to
+ */
+sealed class StreamingServiceInfo
+
+class YouTube(val streamKey: String, val broadcastId: String? = null) : StreamingServiceInfo()
+
+class GenericRtmp(val rtmpUrl: String) : StreamingServiceInfo()
 
 /**
  * [StreamingJibriService] is the [JibriService] responsible for joining a
@@ -71,7 +77,10 @@ class StreamingJibriService(
     private val jibriSelenium = JibriSelenium()
 
     init {
-        sink = YouTubeStreamSink(streamingParams.youTubeStreamKey)
+        sink = when (val service = streamingParams.streamingServiceInfo) {
+            is YouTube -> YouTubeStreamSink(service.streamKey)
+            is GenericRtmp -> GenericRtmpStreamSink(service.rtmpUrl)
+        }
 
         registerSubComponent(JibriSelenium.COMPONENT_ID, jibriSelenium)
         registerSubComponent(FfmpegCapturer.COMPONENT_ID, capturer)
@@ -87,9 +96,11 @@ class StreamingJibriService(
             try {
                 jibriSelenium.addToPresence("session_id", streamingParams.sessionId)
                 jibriSelenium.addToPresence("mode", JibriIq.RecordingMode.STREAM.toString())
-                streamingParams.youTubeBroadcastId?.let {
-                    if (!jibriSelenium.addToPresence("live-stream-view-url", "http://youtu.be/$it")) {
-                        logger.error("Error adding live stream url to presence")
+                if (streamingParams.streamingServiceInfo is YouTube) {
+                    streamingParams.streamingServiceInfo.broadcastId?.let {
+                        if (!jibriSelenium.addToPresence("live-stream-view-url", "http://youtu.be/$it")) {
+                            logger.error("Error adding live stream url to presence")
+                        }
                     }
                 }
                 jibriSelenium.sendPresence()

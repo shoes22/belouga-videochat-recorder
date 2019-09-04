@@ -27,6 +27,7 @@ import org.jitsi.jibri.selenium.CallParams
 import org.jitsi.jibri.service.ServiceParams
 import org.jitsi.jibri.service.impl.SipGatewayServiceParams
 import org.jitsi.jibri.service.impl.StreamingParams
+import org.jitsi.jibri.service.impl.YouTube
 import org.jitsi.jibri.sipgateway.SipClientParams
 import org.jitsi.jibri.status.JibriStatusManager
 import org.jitsi.jibri.util.extensions.debug
@@ -122,10 +123,16 @@ class HttpApi(
                 val youTubeStreamKey = startServiceParams.youTubeStreamKey ?: return Response.status(Response.Status.PRECONDITION_FAILED).build()
                 // If it's a stream, it must have the callLoginParams set
                 val callLoginParams = startServiceParams.callLoginParams ?: return Response.status(Response.Status.PRECONDITION_FAILED).build()
+                val streamingServiceInfo = YouTube(youTubeStreamKey)
                 serviceLauncher {
                     jibriManager.startStreaming(
                             ServiceParams(usageTimeoutMinutes = 0),
-                            StreamingParams(startServiceParams.callParams, startServiceParams.sessionId, callLoginParams, youTubeStreamKey),
+                            StreamingParams(
+                                startServiceParams.callParams,
+                                startServiceParams.sessionId,
+                                callLoginParams,
+                                streamingServiceInfo
+                            ),
                             environmentContext = null
                     )
                 }

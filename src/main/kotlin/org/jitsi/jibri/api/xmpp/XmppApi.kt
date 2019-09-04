@@ -33,6 +33,7 @@ import org.jitsi.jibri.service.JibriServiceStatusHandler
 import org.jitsi.jibri.service.ServiceParams
 import org.jitsi.jibri.service.impl.SipGatewayServiceParams
 import org.jitsi.jibri.service.impl.StreamingParams
+import org.jitsi.jibri.service.impl.YouTube
 import org.jitsi.jibri.sipgateway.SipClientParams
 import org.jitsi.jibri.status.ComponentState
 import org.jitsi.jibri.status.JibriStatus
@@ -286,14 +287,15 @@ class XmppApi(
                 )
             }
             JibriMode.STREAM -> {
+                val streamingServiceInfo = YouTube(startIq.streamId, startIq.youtubeBroadcastId)
                 jibriManager.startStreaming(
                     serviceParams,
                     StreamingParams(
                         callParams,
                         startIq.sessionId,
                         xmppEnvironment.callLogin,
-                        youTubeStreamKey = startIq.streamId,
-                        youTubeBroadcastId = startIq.youtubeBroadcastId),
+                        streamingServiceInfo
+                    ),
                     EnvironmentContext(xmppEnvironment.name),
                     serviceStatusHandler
                 )
