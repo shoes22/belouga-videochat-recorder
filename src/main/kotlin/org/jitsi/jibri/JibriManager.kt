@@ -172,10 +172,7 @@ class JibriManager(
     ) {
         logger.info("Starting a SIP gateway with params: $serviceParams $sipGatewayServiceParams")
         throwIfBusy()
-        val service = SipGatewayJibriService(SipGatewayServiceParams(
-            sipGatewayServiceParams.callParams,
-            sipGatewayServiceParams.sipClientParams
-        ))
+        val service = SipGatewayJibriService(sipGatewayServiceParams)
         statsDClient?.incrementCounter(ASPECT_START, TAG_SERVICE_SIP_GATEWAY)
         return startService(service, serviceParams, environmentContext, serviceStatusHandler)
     }
