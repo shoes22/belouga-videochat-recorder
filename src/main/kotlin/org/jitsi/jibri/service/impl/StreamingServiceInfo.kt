@@ -16,17 +16,25 @@
 
 package org.jitsi.jibri.service.impl
 
-private const val YOUTUBE_BASE_URL = "rtmp://a.rtmp.youtube.com/live2"
-
 /**
  * Needed information for the service we'll be streaming to
  */
 sealed class StreamingServiceInfo {
     abstract val rtmpUrl: String
+    /**
+     * A URL at which the stream being sent can be viewed
+     */
+    open val broadcastUrl: String? = null
 }
 
-class YouTube(val streamKey: String, val broadcastId: String? = null) : StreamingServiceInfo() {
-    override val rtmpUrl: String = "$YOUTUBE_BASE_URL/$streamKey"
+data class YouTube(val streamKey: String, val broadcastId: String? = null) : StreamingServiceInfo() {
+    override val rtmpUrl: String = "$BASE_RTMP_URL/$streamKey"
+    override val broadcastUrl: String? = "$BASE_BROADCAST_URL/$broadcastId"
+
+    companion object {
+        private const val BASE_RTMP_URL = "rtmp://a.rtmp.youtube.com/live2"
+        private const val BASE_BROADCAST_URL = "http://youtu.be/"
+    }
 }
 
-class GenericRtmpService(override val rtmpUrl: String) : StreamingServiceInfo()
+data class GenericRtmpService(override val rtmpUrl: String) : StreamingServiceInfo()

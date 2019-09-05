@@ -83,11 +83,9 @@ class StreamingJibriService(
             try {
                 jibriSelenium.addToPresence("session_id", streamingParams.sessionId)
                 jibriSelenium.addToPresence("mode", JibriIq.RecordingMode.STREAM.toString())
-                if (streamingParams.streamingServiceInfo is YouTube) {
-                    streamingParams.streamingServiceInfo.broadcastId?.let {
-                        if (!jibriSelenium.addToPresence("live-stream-view-url", "http://youtu.be/$it")) {
-                            logger.error("Error adding live stream url to presence")
-                        }
+                streamingParams.streamingServiceInfo.broadcastUrl?.let {
+                    if (!jibriSelenium.addToPresence("live-stream-view-url", it)) {
+                        logger.error("Error adding live stream url to presence")
                     }
                 }
                 jibriSelenium.sendPresence()
