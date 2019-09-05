@@ -25,6 +25,7 @@ import org.jitsi.jibri.config.XmppCredentials
 import org.jitsi.jibri.health.JibriHealth
 import org.jitsi.jibri.selenium.CallParams
 import org.jitsi.jibri.service.ServiceParams
+import org.jitsi.jibri.service.impl.GenericRtmpService
 import org.jitsi.jibri.service.impl.SipGatewayServiceParams
 import org.jitsi.jibri.service.impl.StreamingParams
 import org.jitsi.jibri.service.impl.YouTube
@@ -41,6 +42,7 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 // TODO: this needs to include usageTimeout
+@Deprecated("Use the structures passed to the individual startXXX endpoints instead")
 data class StartServiceParams(
     val sessionId: String,
     val callParams: CallParams,
@@ -59,6 +61,18 @@ data class StartServiceParams(
 )
 
 /**
+ * Note that, unlike the XMPP API, this only supports passing an RTMP
+ * URL via [ServiceParams.appData]--so YouTube is signalled the same
+ * way as any other RTMP service.
+ */
+data class StartLiveStreamRequest(
+    val serviceParams: ServiceParams,
+    val sessionId: String,
+    val callParams: CallParams,
+    val callLoginParams: XmppCredentials
+)
+
+/**
  * The [HttpApi] is for starting and stopping the various Jibri services via the
  * [JibriManager], as well as retrieving the health and status of this Jibri
  */
@@ -71,7 +85,7 @@ class HttpApi(
 
     /**
      * Get the health of this Jibri in the format of a json-encoded
-     * [org.jitsi.jibri.health.JibriHealth] object
+     * [JibriHealth] object
      */
     @GET
     @Path("health")
@@ -83,6 +97,22 @@ class HttpApi(
         return Response.ok(health).build()
     }
 
+    @POST
+    @Path("startLiveStream")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun startLiveStream(startLiveStreamRequest: StartLiveStreamRequest) {
+        logger.debug("Got a start service request with params $startLiveStreamRequest")
+        jibriManager.startStreaming(
+            ServiceParams(usageTimeoutMinutes = 0),
+            StreamingParams(
+                startLiveStreamRequest.callParams,
+                startLiveStreamRequest.sessionId,
+                startLiveStreamRequest.callLoginParams,
+                GenericRtmpService(startLiveStreamRequest.serviceParams.appData!!.rtmpUrl!!)
+            )
+        )
+    }
+
     /**
      * [startService] will start a new service using the given [StartServiceParams].
      * Returns a response with [Response.Status.OK] on success, [Response.Status.PRECONDITION_FAILED]
@@ -91,6 +121,7 @@ class HttpApi(
      * was able to *try* to start the request.  We don't have a way to get ongoing updates about services
      * via the HTTP API at this point.
      */
+    @Deprecated("use the specific startXXX endpoint methods instead")
     @POST
     @Path("startService")
     @Consumes(MediaType.APPLICATION_JSON)
