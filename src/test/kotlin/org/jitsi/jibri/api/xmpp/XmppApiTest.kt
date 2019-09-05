@@ -40,7 +40,7 @@ import org.jitsi.jibri.config.XmppMuc
 import org.jitsi.jibri.service.AppData
 import org.jitsi.jibri.service.JibriServiceStatusHandler
 import org.jitsi.jibri.service.ServiceParams
-import org.jitsi.jibri.service.impl.GenericRtmp
+import org.jitsi.jibri.service.impl.GenericRtmpService
 import org.jitsi.jibri.service.impl.StreamingParams
 import org.jitsi.jibri.service.impl.YouTube
 import org.jitsi.jibri.status.ComponentState
@@ -218,8 +218,8 @@ class XmppApiTest : ShouldSpec() {
                     }
                     should("pass the proper StreamingServiceInfo") {
                         val serviceInfo = streamingParams.firstValue.streamingServiceInfo
-                        serviceInfo.shouldBeInstanceOf<GenericRtmp>()
-                        serviceInfo as GenericRtmp
+                        serviceInfo.shouldBeInstanceOf<GenericRtmpService>()
+                        serviceInfo as GenericRtmpService
                         serviceInfo.rtmpUrl shouldBe "http://rtmp_url"
                     }
                 }

@@ -25,8 +25,7 @@ import org.jitsi.jibri.selenium.JibriSelenium
 import org.jitsi.jibri.selenium.RECORDING_URL_OPTIONS
 import org.jitsi.jibri.service.JibriService
 import org.jitsi.jibri.sink.Sink
-import org.jitsi.jibri.sink.impl.GenericRtmpStreamSink
-import org.jitsi.jibri.sink.impl.YouTubeStreamSink
+import org.jitsi.jibri.sink.impl.StreamSink
 import org.jitsi.jibri.status.ComponentState
 import org.jitsi.jibri.status.ErrorScope
 import org.jitsi.jibri.util.extensions.error
@@ -56,15 +55,6 @@ data class StreamingParams(
 )
 
 /**
- * Needed information for the service we'll be streaming to
- */
-sealed class StreamingServiceInfo
-
-class YouTube(val streamKey: String, val broadcastId: String? = null) : StreamingServiceInfo()
-
-class GenericRtmp(val rtmpUrl: String) : StreamingServiceInfo()
-
-/**
  * [StreamingJibriService] is the [JibriService] responsible for joining a
  * web call, capturing its audio and video, and streaming that audio and video
  * to a url
@@ -77,10 +67,7 @@ class StreamingJibriService(
     private val jibriSelenium = JibriSelenium()
 
     init {
-        sink = when (val service = streamingParams.streamingServiceInfo) {
-            is YouTube -> YouTubeStreamSink(service.streamKey)
-            is GenericRtmp -> GenericRtmpStreamSink(service.rtmpUrl)
-        }
+        sink = StreamSink(streamingParams.streamingServiceInfo.rtmpUrl)
 
         registerSubComponent(JibriSelenium.COMPONENT_ID, jibriSelenium)
         registerSubComponent(FfmpegCapturer.COMPONENT_ID, capturer)

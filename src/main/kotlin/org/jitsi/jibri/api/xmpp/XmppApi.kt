@@ -31,7 +31,7 @@ import org.jitsi.jibri.selenium.CallParams
 import org.jitsi.jibri.service.AppData
 import org.jitsi.jibri.service.JibriServiceStatusHandler
 import org.jitsi.jibri.service.ServiceParams
-import org.jitsi.jibri.service.impl.GenericRtmp
+import org.jitsi.jibri.service.impl.GenericRtmpService
 import org.jitsi.jibri.service.impl.SipGatewayServiceParams
 import org.jitsi.jibri.service.impl.StreamingParams
 import org.jitsi.jibri.service.impl.YouTube
@@ -297,7 +297,7 @@ class XmppApi(
                     appData?.rtmpUrl != null -> {
                         // AppData.rtmpUrl is checked if the YouTube streamId is null to support other
                         // services
-                        GenericRtmp(appData.rtmpUrl)
+                        GenericRtmpService(appData.rtmpUrl)
                     }
                     else -> throw UnsupportedStreamServiceConfiguration("no service url set")
                 }
