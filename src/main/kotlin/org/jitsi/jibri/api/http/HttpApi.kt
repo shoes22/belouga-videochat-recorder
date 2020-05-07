@@ -42,7 +42,7 @@ import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
 
 // TODO: this needs to include usageTimeout
-@Deprecated("Use the structures passed to the individual startXXX endpoints instead")
+// @Deprecated("Use the structures passed to the individual startXXX endpoints instead")
 data class StartServiceParams(
     val sessionId: String,
     val callParams: CallParams,
@@ -121,7 +121,7 @@ class HttpApi(
      * was able to *try* to start the request.  We don't have a way to get ongoing updates about services
      * via the HTTP API at this point.
      */
-    @Deprecated("use the specific startXXX endpoint methods instead")
+    // @Deprecated("use the specific startXXX endpoint methods instead")
     @POST
     @Path("startService")
     @Consumes(MediaType.APPLICATION_JSON)
