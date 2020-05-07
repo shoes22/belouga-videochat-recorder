@@ -39,7 +39,15 @@ data class AppData(
      * to the metadata file when doing a recording.
      */
     @JsonProperty("file_recording_metadata")
-    val fileRecordingMetadata: Map<Any, Any>?
+    val fileRecordingMetadata: Map<Any, Any>? = null,
+
+    /**
+     * A field which can be set to stream to any RTMP URL.  This
+     * property will only be read if the [JibriIq#streamId] field
+     * is null.
+     */
+    @JsonProperty("rtmp_url")
+    val rtmpUrl: String? = null
 )
 
 /**

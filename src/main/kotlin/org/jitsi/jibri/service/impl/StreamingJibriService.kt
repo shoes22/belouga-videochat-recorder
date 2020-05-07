@@ -31,9 +31,6 @@ import org.jitsi.jibri.status.ComponentState
 import org.jitsi.jibri.util.extensions.error
 import org.jitsi.jibri.util.whenever
 
-private const val YOUTUBE_URL = "rtmp://a.rtmp.youtube.com/live2"
-private const val STREAMING_MAX_BITRATE = 2976
-
 /**
  * Parameters needed for starting a [StreamingJibriService]
  */
@@ -52,13 +49,9 @@ data class StreamingParams(
      */
     val callLoginParams: XmppCredentials,
     /**
-     * The YouTube stream key to use for this stream
+     * Needed information for the service we'll be streaming to
      */
-    val youTubeStreamKey: String,
-    /**
-     * The YouTube broadcast ID for this stream, if we have it
-     */
-    val youTubeBroadcastId: String? = null
+    val streamingServiceInfo: StreamingServiceInfo
 )
 
 /**
@@ -74,11 +67,7 @@ class StreamingJibriService(
     private val jibriSelenium = JibriSelenium()
 
     init {
-        sink = StreamSink(
-            url = "$YOUTUBE_URL/${streamingParams.youTubeStreamKey}",
-            streamingMaxBitrate = STREAMING_MAX_BITRATE,
-            streamingBufSize = 2 * STREAMING_MAX_BITRATE
-        )
+        sink = StreamSink(streamingParams.streamingServiceInfo.rtmpUrl)
 
         registerSubComponent(JibriSelenium.COMPONENT_ID, jibriSelenium)
         registerSubComponent(FfmpegCapturer.COMPONENT_ID, capturer)
@@ -94,8 +83,8 @@ class StreamingJibriService(
             try {
                 jibriSelenium.addToPresence("session_id", streamingParams.sessionId)
                 jibriSelenium.addToPresence("mode", JibriIq.RecordingMode.STREAM.toString())
-                streamingParams.youTubeBroadcastId?.let {
-                    if (!jibriSelenium.addToPresence("live-stream-view-url", "http://youtu.be/$it")) {
+                streamingParams.streamingServiceInfo.broadcastUrl?.let {
+                    if (!jibriSelenium.addToPresence("live-stream-view-url", it)) {
                         logger.error("Error adding live stream url to presence")
                     }
                 }
