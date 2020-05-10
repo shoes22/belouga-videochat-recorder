@@ -299,10 +299,11 @@ class XmppApi(
             }
             JibriMode.STREAM -> {
                 val streamingServiceInfo = when {
-                    startIq.streamId != null -> {
+                    //Disabling YouTube support entirely until streamID being null is supported in Jicofo. Not dealing with this shit.
+                    //startIq.streamId != null -> {
                         // startIq.streamId (due to legacy reasons) is used for YouTube streams
-                        YouTube(startIq.streamId, startIq.youtubeBroadcastId)
-                    }
+                    //    YouTube(startIq.streamId, startIq.youtubeBroadcastId)
+                    //}
                     appData?.rtmpUrl != null -> {
                         // AppData.rtmpUrl is checked if the YouTube streamId is null to support other
                         // services
