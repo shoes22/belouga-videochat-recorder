@@ -307,7 +307,7 @@ class XmppApi(
                     }
                     //Moving this to the second statement until streamID being null is supported in Jicofo. Not dealing with this shit.
                     startIq.streamId != null -> {
-                        startIq.streamId (due to legacy reasons) is used for YouTube streams
+                        //startIq.streamId (due to legacy reasons) is used for YouTube streams
                         YouTube(startIq.streamId, startIq.youtubeBroadcastId)
                     }
                     else -> throw UnsupportedStreamServiceConfiguration("no service url set")
