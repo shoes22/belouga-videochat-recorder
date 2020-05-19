@@ -152,13 +152,21 @@ class JibriManager(
     @Synchronized
     fun startStreaming(
         serviceParams: ServiceParams,
-        streamingParams: StreamingParams,
+        fileRecordingRequestParams: FileRecordingRequestParams,
         environmentContext: EnvironmentContext? = null,
         serviceStatusHandler: JibriServiceStatusHandler? = null
     ) {
         logger.info("Starting a stream with params: $serviceParams $streamingParams")
         throwIfBusy()
-        val service = StreamingJibriService(streamingParams)
+        val service = StreamingJibriService(
+            StreamingParams(
+                fileRecordingRequestParams.callParams,
+                fileRecordingRequestParams.sessionId,
+                fileRecordingRequestParams.callLoginParams,
+                fileSystem.getPath(config.finalizeRecordingScriptPath),
+                fileSystem.getPath(config.recordingDirectory)
+          )
+        )
         statsDClient?.incrementCounter(ASPECT_START, TAG_SERVICE_LIVE_STREAM)
         startService(service, serviceParams, environmentContext, serviceStatusHandler)
     }
