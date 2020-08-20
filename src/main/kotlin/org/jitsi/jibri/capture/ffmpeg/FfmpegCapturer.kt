@@ -51,7 +51,7 @@ data class FfmpegExecutorParams(
         // it should look the same or nearly the same as the input but it
         // isn't technically lossless.
         // https://trac.ffmpeg.org/wiki/Encode/H.264#crf
-    val h264ConstantRateFactor: Int = 21,
+    val h264ConstantRateFactor: Int = 25,
     val gopSize: Int = framerate * 2
 )
 

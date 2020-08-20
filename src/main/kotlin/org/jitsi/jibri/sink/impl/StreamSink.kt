@@ -18,9 +18,6 @@
 package org.jitsi.jibri.sink.impl
 
 import org.jitsi.jibri.sink.Sink
-import java.nio.file.Path
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 private const val DEFAULT_STREAMING_MAX_BITRATE = 2976
 
@@ -29,18 +26,10 @@ private const val DEFAULT_STREAMING_MAX_BITRATE = 2976
  */
 class StreamSink(
     rtmpUrl: String,
-    recordingsDirectory: Path,
-    callName: String,
     streamingMaxBitrate: Int = DEFAULT_STREAMING_MAX_BITRATE,
     streamingBufSize: Int = 2 * streamingMaxBitrate
 ) : Sink {
-    val file: Path
-    init {
-        val suffix = "_${LocalDateTime.now().format(TIMESTAMP_FORMATTER)}.mp4"
-        val filename = "${callName.take(MAX_FILENAME_LENGTH - suffix.length)}$suffix"
-        file = recordingsDirectory.resolve(filename)
-    }
-    override val path: String = "$rtmpUrl|[f=mp4]${file.toString()}"
+    override val path: String = rtmpUrl
     override val format: String = "flv"
     override val options: Array<String> = arrayOf(
         "-maxrate", "${streamingMaxBitrate}k",

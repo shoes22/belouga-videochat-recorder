@@ -49,20 +49,6 @@ data class StreamingParams(
      */
     val callLoginParams: XmppCredentials,
     /**
-     * The filesystem path to the script which should be executed when
-     *  the recording is finished.
-     */
-    val finalizeScriptPath: Path,
-    /**
-     * The directory in which recordings should be created
-     */
-    val recordingDirectory: Path,
-    /**
-     * A map of arbitrary key, value metadata that will be written
-     * to the metadata file.
-     *
-    * val additionalMetadata: Map<Any, Any>? = null,
-    **
      * Needed information for the service we'll be streaming to
      */
     val streamingServiceInfo: StreamingServiceInfo
@@ -79,14 +65,9 @@ class StreamingJibriService(
     private val capturer = FfmpegCapturer()
     private val sink: Sink
     private val jibriSelenium = JibriSelenium()
-    private val sessionRecordingDirectory =
-        streamingParams.recordingDirectory.resolve(streamingParams.sessionId)
 
     init {
-        sink = StreamSink(streamingParams.streamingServiceInfo.rtmpUrl,
-            sessionRecordingDirectory,
-            streamingParams.callParams.callUrlInfo.callName
-        )
+        sink = StreamSink(streamingParams.streamingServiceInfo.rtmpUrl)
 
         registerSubComponent(JibriSelenium.COMPONENT_ID, jibriSelenium)
         registerSubComponent(FfmpegCapturer.COMPONENT_ID, capturer)
