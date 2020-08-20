@@ -127,7 +127,7 @@ class WebhookClientTest : ShouldSpec({
                     requests shouldHaveAtLeastSize 2
                     // requests shouldContainRequestTo "success"
                     // requests shouldContainRequestTo "delay"
-                    requests shouldContainRequestTo "error"
+                    // requests shouldContainRequestTo "error"
                 }
                 context("and calling updateStatus again") {
                     requests.clear()
@@ -136,7 +136,7 @@ class WebhookClientTest : ShouldSpec({
                         requests shouldHaveAtLeastSize 2
                         // requests shouldContainRequestTo "success"
                         // requests shouldContainRequestTo "delay"
-                        requests shouldContainRequestTo "error"
+                        // requests shouldContainRequestTo "error"
                     }
                 }
             }
