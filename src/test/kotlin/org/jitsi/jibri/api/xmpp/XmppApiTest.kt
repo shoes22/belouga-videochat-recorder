@@ -220,7 +220,7 @@ class XmppApiTest : ShouldSpec() {
             context("when receiving a start streaming iq") {
                 val jibriIq = createJibriIq(JibriIq.Action.START, JibriIq.RecordingMode.STREAM)
                 val streamingParams = mutableListOf<StreamingParams>()
-                every { jibriManager.startStreaming(any(), capture(streamingParams), any(), any())} just Runs
+                every { jibriManager.startStreaming(any(), capture(streamingParams), any(), any()) } just Runs
                 context("for a YouTube stream") {
                     jibriIq.streamId = "youtube_stream_id"
                     jibriIq.setYouTubeBroadcastId("youtube_broadcast_id")

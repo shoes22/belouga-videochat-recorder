@@ -37,7 +37,7 @@ import org.jitsi.jibri.config.XmppCredentials
 import org.jitsi.jibri.health.JibriHealth
 import org.jitsi.jibri.selenium.CallParams
 import org.jitsi.jibri.service.ServiceParams
-import org.jitsi.jibri.service.impl.GenericRtmpService
+// import org.jitsi.jibri.service.impl.GenericRtmpService Disable for now
 import org.jitsi.jibri.service.impl.SipGatewayServiceParams
 import org.jitsi.jibri.service.impl.StreamingParams
 import org.jitsi.jibri.service.impl.YouTube
