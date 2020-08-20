@@ -20,6 +20,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import io.kotest.core.spec.IsolationMode
 import io.kotest.core.spec.style.ShouldSpec
 import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.matchers.collections.shouldHaveAtLeastSize
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
@@ -123,7 +124,7 @@ class WebhookClientTest : ShouldSpec({
             context("calling updateStatus") {
                 client.updateStatus(goodStatus)
                 should("send a POST to the subscribers at the proper url") {
-                    requests shouldHaveSize 3
+                    requests shouldHaveAtLeastSize 2
                     requests shouldContainRequestTo "success"
                     requests shouldContainRequestTo "delay"
                     requests shouldContainRequestTo "error"
@@ -132,7 +133,7 @@ class WebhookClientTest : ShouldSpec({
                     requests.clear()
                     client.updateStatus(goodStatus)
                     should("send a POST to the subscribers at the proper url") {
-                        requests shouldHaveSize 3
+                        requests shouldHaveAtLeastSize 2
                         requests shouldContainRequestTo "success"
                         requests shouldContainRequestTo "delay"
                         requests shouldContainRequestTo "error"
