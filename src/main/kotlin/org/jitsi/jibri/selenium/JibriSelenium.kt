@@ -17,6 +17,7 @@
 package org.jitsi.jibri.selenium
 
 import org.jitsi.jibri.CallUrlInfo
+import org.jitsi.jibri.config.Config
 import org.jitsi.jibri.config.XmppCredentials
 import org.jitsi.jibri.selenium.pageobjects.CallPage
 import org.jitsi.jibri.selenium.pageobjects.HomePage
@@ -30,6 +31,8 @@ import org.jitsi.jibri.util.TaskPools
 import org.jitsi.jibri.util.extensions.error
 import org.jitsi.jibri.util.extensions.scheduleAtFixedRate
 import org.jitsi.jibri.util.getLoggerWithHandler
+import org.jitsi.metaconfig.config
+import org.jitsi.metaconfig.from
 import org.openqa.selenium.TimeoutException
 import org.openqa.selenium.chrome.ChromeDriver
 import org.openqa.selenium.chrome.ChromeDriverService
@@ -89,7 +92,8 @@ val SIP_GW_URL_OPTIONS = listOf(
     "config.ignoreStartMuted=true",
     "config.analytics.disabled=true",
     "config.p2p.enabled=false",
-    "config.prejoinPageEnabled=false"
+    "config.prejoinPageEnabled=false",
+    "config.requireDisplayName=false"
 )
 
 val RECORDING_URL_OPTIONS = listOf(
@@ -100,7 +104,8 @@ val RECORDING_URL_OPTIONS = listOf(
     "interfaceConfig.APP_NAME=\"Jibri\"",
     "config.analytics.disabled=true",
     "config.p2p.enabled=false",
-    "config.prejoinPageEnabled=false"
+    "config.prejoinPageEnabled=false",
+    "config.requireDisplayName=false"
 )
 
 /**
@@ -119,6 +124,7 @@ class JibriSelenium(
     private var currCallUrl: String? = null
     private val stateMachine = SeleniumStateMachine()
     private var shuttingDown = AtomicBoolean(false)
+    private val chromeOpts: List<String> by config("jibri.chrome.flags".from(Config.configSource))
 
     /**
      * A task which executes at an interval and checks various aspects of the call to make sure things are
@@ -127,25 +133,13 @@ class JibriSelenium(
     private var recurringCallStatusCheckTask: ScheduledFuture<*>? = null
     private val callStatusChecks: List<CallStatusCheck>
 
-    companion object {
-        private val browserOutputLogger = getLoggerWithHandler("browser", BrowserFileHandler())
-        const val COMPONENT_ID = "Selenium"
-    }
-
     /**
      * Set up default chrome driver options (using fake device, etc.)
       */
     init {
         System.setProperty("webdriver.chrome.logfile", "/tmp/chromedriver.log")
         val chromeOptions = ChromeOptions()
-        chromeOptions.addArguments(
-                "--use-fake-ui-for-media-stream",
-                "--start-maximized",
-                "--kiosk",
-                "--enabled",
-                "--disable-infobars",
-                "--autoplay-policy=no-user-gesture-required"
-        )
+        chromeOptions.addArguments(chromeOpts)
         chromeOptions.setExperimentalOption("w3c", false)
         chromeOptions.addArguments(jibriSeleniumOptions.extraChromeCommandLineFlags)
         val chromeDriverService = ChromeDriverService.Builder().withEnvironment(
@@ -250,7 +244,8 @@ class JibriSelenium(
                         "callStatsUserName" to "jibri"
                 )
                 xmppCredentials?.let {
-                    localStorageValues["xmpp_username_override"] = "${xmppCredentials.username}@${xmppCredentials.domain}"
+                    localStorageValues["xmpp_username_override"] =
+                        "${xmppCredentials.username}@${xmppCredentials.domain}"
                     localStorageValues["xmpp_password_override"] = xmppCredentials.password
                 }
                 setLocalStorageValues(localStorageValues)
@@ -302,5 +297,10 @@ class JibriSelenium(
         logger.info("Quitting chrome driver")
         chromeDriver.quit()
         logger.info("Chrome driver quit")
+    }
+
+    companion object {
+        private val browserOutputLogger = getLoggerWithHandler("browser", BrowserFileHandler())
+        const val COMPONENT_ID = "Selenium"
     }
 }

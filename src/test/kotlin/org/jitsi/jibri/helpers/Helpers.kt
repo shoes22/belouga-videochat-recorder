@@ -16,7 +16,14 @@
  */
 package org.jitsi.jibri.helpers
 
+import org.jitsi.jibri.util.LoggingUtils
+import org.jitsi.jibri.util.ProcessWrapper
+import org.jitsi.jibri.util.TaskPools
 import java.time.Duration
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Future
+import java.util.concurrent.ScheduledExecutorService
+import java.util.logging.Logger
 
 /**
  * Custom version of kotlin.test's [io.kotlintest.eventually] which uses milliseconds
@@ -42,25 +49,31 @@ fun <T> within(duration: Duration, func: () -> T): T {
     throw AssertionError("Test failed after ${duration.seconds} seconds; attempted $times times")
 }
 
-fun Int.seconds(): Duration = Duration.ofSeconds(this.toLong())
+val Int.seconds: Duration
+    get() = Duration.ofSeconds(this.toLong())
+val Int.minutes: Duration
+    get() = Duration.ofMinutes(this.toLong())
 
-/**
- * Ensures that, for the given [Duration], [func] should always evaluate
- * correctly
- */
-fun <T> forAllOf(duration: Duration, func: () -> T) {
-    val start = System.currentTimeMillis()
-    val end = start + duration.toMillis()
-    var times = 1
-    while (System.currentTimeMillis() < end) {
-        try {
-            func()
-        } catch (e: Throwable) {
-            if (AssertionError::class.java.isAssignableFrom(e.javaClass)) {
-                throw AssertionError("Test failed after ${System.currentTimeMillis() - start}ms; attempted $times times")
-            }
-        }
-        times++
-        Thread.sleep(500)
-    }
+fun LoggingUtils.Companion.setTestOutputLogger(outputLogger: (ProcessWrapper, Logger) -> Future<Boolean>) {
+    logOutput = outputLogger
+}
+
+fun LoggingUtils.Companion.resetOutputLogger() {
+    logOutput = OutputLogger
+}
+
+fun TaskPools.Companion.setIoPool(pool: ExecutorService) {
+    ioPool = pool
+}
+
+fun TaskPools.Companion.resetIoPool() {
+    ioPool = DefaultIoPool
+}
+
+fun TaskPools.Companion.setScheduledPool(pool: ScheduledExecutorService) {
+    recurringTasksPool = pool
+}
+
+fun TaskPools.Companion.resetScheduledPool() {
+    recurringTasksPool = DefaultRecurringTaskPool
 }

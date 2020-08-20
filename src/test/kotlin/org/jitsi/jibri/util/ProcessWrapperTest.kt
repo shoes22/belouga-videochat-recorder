@@ -17,21 +17,17 @@
 
 package org.jitsi.jibri.util
 
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.doThrow
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
-import io.kotlintest.IsolationMode
-import io.kotlintest.TestCase
-import io.kotlintest.matchers.string.shouldContain
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldThrow
-import io.kotlintest.specs.ShouldSpec
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import org.jitsi.jibri.helpers.seconds
 import org.jitsi.jibri.helpers.within
-import org.mockito.ArgumentMatchers.anyString
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -40,32 +36,30 @@ import java.io.PipedOutputStream
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
+@Suppress("BlockingMethodInNonBlockingContext")
 internal class ProcessWrapperTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    private val processBuilder: ProcessBuilder = mock()
-    private val process: Process = mock()
-    private val runtime: Runtime = mock()
+    private val processBuilder: ProcessBuilder = mockk(relaxed = true)
+    private val process: Process = mockk(relaxed = true)
+    private val runtime: Runtime = mockk(relaxed = true)
     private lateinit var outputStream: PipedOutputStream
     private lateinit var inputStream: PipedInputStream
     private lateinit var processWrapper: ProcessWrapper
 
-    override fun beforeTest(testCase: TestCase) {
-        super.beforeTest(testCase)
-
-        outputStream = PipedOutputStream()
-        inputStream = PipedInputStream(outputStream)
-
-        whenever(process.inputStream).thenReturn(inputStream)
-        whenever(process.destroyForcibly()).thenReturn(process)
-        whenever(processBuilder.start()).thenReturn(process)
-
-        processWrapper = ProcessWrapper(listOf(), processBuilder = processBuilder, runtime = runtime)
-        processWrapper.start()
-    }
-
     init {
-        "getOutput" {
+        beforeTest {
+            outputStream = PipedOutputStream()
+            inputStream = PipedInputStream(outputStream)
+
+            every { process.inputStream } returns inputStream
+            every { process.destroyForcibly() } returns process
+            every { processBuilder.start() } returns process
+
+            processWrapper = ProcessWrapper(listOf(), processBuilder = processBuilder, runtime = runtime)
+            processWrapper.start()
+        }
+        context("getOutput") {
             should("return independent streams") {
                 val op1 = processWrapper.getOutput()
                 val reader1 = BufferedReader(InputStreamReader(op1))
@@ -78,125 +72,121 @@ internal class ProcessWrapperTest : ShouldSpec() {
                 reader2.readLine() shouldBe "hello"
             }
         }
-        "getMostRecentLine" {
+        context("getMostRecentLine") {
             should("return empty string at first") {
                 processWrapper.getMostRecentLine() shouldBe ""
             }
             should("be equal to the process stdout") {
                 outputStream.write("hello\n".toByteArray())
-                within(5.seconds()) {
+                within(5.seconds) {
                     processWrapper.getMostRecentLine() shouldBe "hello"
                 }
             }
             should("update to the most recent line") {
                 outputStream.write("hello\n".toByteArray())
                 outputStream.write("goodbye\n".toByteArray())
-                within(5.seconds()) {
+                within(5.seconds) {
                     processWrapper.getMostRecentLine() shouldBe "goodbye"
                 }
             }
         }
-        "isAlive" {
+        context("isAlive") {
             should("return false if the process is dead") {
-                whenever(process.isAlive).thenReturn(false)
+                every { process.isAlive } returns false
                 processWrapper.isAlive shouldBe false
             }
             should("return true if the process is alive") {
-                whenever(process.isAlive).thenReturn(true)
+                every { process.isAlive } returns true
                 processWrapper.isAlive shouldBe true
             }
         }
-        "exitValue" {
-            "when the process has exited" {
+        context("exitValue") {
+            context("when the process has exited") {
                 should("return its exit code") {
-                    whenever(process.exitValue()).thenReturn(42)
+                    every { process.exitValue() } returns 42
                     processWrapper.exitValue shouldBe 42
                 }
             }
-            "when the process has not exited" {
+            context("when the process has not exited") {
                 should("throw IllegalThreadStateException") {
-                    whenever(process.exitValue()).doThrow(IllegalThreadStateException())
+                    every { process.exitValue() } throws IllegalThreadStateException()
                     shouldThrow<IllegalThreadStateException> {
                         processWrapper.exitValue
                     }
                 }
             }
         }
-        "waitFor" {
+        context("waitFor") {
             should("call the process' waitFor") {
                 processWrapper.waitFor()
-                verify(process).waitFor()
+                verify { process.waitFor() }
             }
         }
-        "waitFor(timeout)" {
+        context("waitFor(timeout)") {
             should("call the process' waitFor(timeout')") {
                 processWrapper.waitFor(10, TimeUnit.SECONDS)
-                verify(process).waitFor(10, TimeUnit.SECONDS)
+                verify { process.waitFor(10, TimeUnit.SECONDS) }
             }
         }
-        "destroyForcibly" {
+        context("destroyForcibly") {
             should("call the process' destroyForcibly") {
                 processWrapper.destroyForcibly()
-                verify(process).destroyForcibly()
+                verify { process.destroyForcibly() }
             }
         }
-        "stop" {
+        context("stop") {
             should("invoke the correct command") {
-                val execCaptor = argumentCaptor<String>()
-                whenever(runtime.exec(execCaptor.capture())).thenReturn(process)
+                val execCaptor = slot<String>()
+                every { runtime.exec(capture(execCaptor)) } returns process
                 processWrapper.stop()
-                execCaptor.firstValue.let {
-                    it shouldContain "kill -s SIGINT"
-                }
+                execCaptor.captured shouldContain "kill -s SIGINT"
             }
-            "when the runtime throws IOException" {
-                whenever(runtime.exec(anyString())).thenAnswer { throw IOException() }
+            context("when the runtime throws IOException") {
+                every { runtime.exec(any<String>()) } throws IOException()
                 should("let the exception bubble up") {
                     shouldThrow<IOException> { processWrapper.stop() }
                 }
             }
-            "when the runtime throws RuntimeException" {
-                whenever(runtime.exec(anyString())).thenAnswer { throw RuntimeException() }
+            context("when the runtime throws RuntimeException") {
+                every { runtime.exec(any<String>()) } throws RuntimeException()
                 should("let the exception bubble up") {
-                    shouldThrow<java.lang.RuntimeException> { processWrapper.stop() }
+                    shouldThrow<RuntimeException> { processWrapper.stop() }
                 }
             }
         }
-        "stopAndWaitFor" {
+        context("stopAndWaitFor") {
             should("invoke the correct command") {
-                val execCaptor = argumentCaptor<String>()
-                whenever(runtime.exec(execCaptor.capture())).thenReturn(process)
-                whenever(process.waitFor(any(), any())).thenReturn(true)
+                val execCaptor = slot<String>()
+                every { runtime.exec(capture(execCaptor)) } returns process
+                every { process.waitFor(any(), any()) } returns true
                 processWrapper.stopAndWaitFor(Duration.ofSeconds(10)) shouldBe true
-                execCaptor.firstValue.let {
-                    it shouldContain "kill -s SIGINT"
-                }
+                execCaptor.captured shouldContain "kill -s SIGINT"
             }
-            "when the runtime throws IOException" {
-                whenever(runtime.exec(anyString())).thenAnswer { throw IOException() }
+            context("when the runtime throws IOException") {
+                every { runtime.exec(any<String>()) } throws IOException()
                 should("handle it correctly") {
                     processWrapper.stopAndWaitFor(Duration.ofSeconds(10)) shouldBe false
                 }
             }
-            "when the runtime throws RuntimeException" {
-                whenever(runtime.exec(anyString())).thenAnswer { throw RuntimeException() }
+            context("when the runtime throws RuntimeException") {
+                every { runtime.exec(any<String>()) } throws RuntimeException()
                 should("handle it correctly") {
                     processWrapper.stopAndWaitFor(Duration.ofSeconds(10)) shouldBe false
                 }
             }
         }
-        "destroyForciblyAndWaitFor" {
+        context("destroyForciblyAndWaitFor") {
             should("invoke the correct command") {
-                whenever(process.waitFor(any(), any())).thenReturn(true)
+                every { process.waitFor(any(), any()) } returns true
                 processWrapper.destroyForciblyAndWaitFor(Duration.ofSeconds(10)) shouldBe true
-                verify(process).destroyForcibly()
+                verify { process.destroyForcibly() }
             }
-            "when waitFor returns false" {
-                whenever(process.waitFor(any(), any())).thenReturn(false)
+            context("when waitFor returns false") {
+                every { process.waitFor(any(), any()) } returns false
                 processWrapper.destroyForciblyAndWaitFor(Duration.ofSeconds(10)) shouldBe false
             }
-            "when waitFor throws" {
-                whenever(process.waitFor(any(), any())).thenAnswer { throw InterruptedException() }
+            context("when waitFor throws") {
+                every { process.waitFor(any(), any()) } throws InterruptedException()
                 processWrapper.destroyForciblyAndWaitFor(Duration.ofSeconds(10)) shouldBe false
             }
         }

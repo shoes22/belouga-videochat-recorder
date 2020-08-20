@@ -18,25 +18,27 @@
 package org.jitsi.jibri.api.xmpp
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import com.nhaarman.mockitokotlin2.any
-import com.nhaarman.mockitokotlin2.argumentCaptor
-import com.nhaarman.mockitokotlin2.mock
-import com.nhaarman.mockitokotlin2.times
-import com.nhaarman.mockitokotlin2.verify
-import com.nhaarman.mockitokotlin2.whenever
-import io.kotlintest.IsolationMode
-import io.kotlintest.TestCase
-import io.kotlintest.matchers.beInstanceOf
-import io.kotlintest.matchers.types.shouldBeInstanceOf
-import io.kotlintest.should
-import io.kotlintest.shouldBe
-import io.kotlintest.shouldNotBe
-import io.kotlintest.specs.ShouldSpec
+import io.kotest.core.spec.IsolationMode
+import io.kotest.core.spec.style.ShouldSpec
+import io.kotest.matchers.beInstanceOf
+import io.kotest.matchers.should
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.types.shouldBeInstanceOf
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
+import org.jitsi.jibri.JibriBusyException
 import org.jitsi.xmpp.extensions.jibri.JibriIq
 import org.jitsi.jibri.JibriManager
 import org.jitsi.jibri.config.XmppCredentials
 import org.jitsi.jibri.config.XmppEnvironmentConfig
 import org.jitsi.jibri.config.XmppMuc
+import org.jitsi.jibri.helpers.resetIoPool
+import org.jitsi.jibri.helpers.setIoPool
 import org.jitsi.jibri.service.AppData
 import org.jitsi.jibri.service.JibriServiceStatusHandler
 import org.jitsi.jibri.service.ServiceParams
@@ -52,6 +54,7 @@ import org.jitsi.jibri.status.OverallHealth
 import org.jitsi.jibri.util.TaskPools
 import org.jitsi.xmpp.mucclient.MucClient
 import org.jitsi.xmpp.mucclient.MucClientManager
+import org.jivesoftware.smack.packet.IQ
 import org.jivesoftware.smack.packet.Stanza
 import org.jivesoftware.smack.packet.XMPPError
 import org.jxmpp.jid.impl.JidCreate
@@ -61,29 +64,22 @@ import java.util.concurrent.ExecutorService
 class XmppApiTest : ShouldSpec() {
     override fun isolationMode(): IsolationMode? = IsolationMode.InstancePerLeaf
 
-    private fun createJibriIq(iqAction: JibriIq.Action, iqMode: JibriIq.RecordingMode): JibriIq {
+    private fun createJibriIq(iqAction: JibriIq.Action, iqMode: JibriIq.RecordingMode? = null): JibriIq {
         return JibriIq().apply {
-            recordingMode = iqMode
+            iqMode?.let {
+                recordingMode = it
+            }
             action = iqAction
             // Note that the domain used below must match the ones in the xmpp env config
             from = JidCreate.from("from_jid@xmppDomain")
+            to = JidCreate.from("to_jid@xmppDomain")
             room = JidCreate.entityBareFrom("room_jid@xmppDomain")
             sessionId = "session_id"
         }
     }
 
-    override fun beforeTest(testCase: TestCase) {
-        super.beforeTest(testCase)
-        val executorService: ExecutorService = mock()
-        whenever(executorService.submit(any<Runnable>())).then {
-            (it.arguments.first() as Runnable).run()
-            CompletableFuture<Unit>()
-        }
-        TaskPools.ioPool = executorService
-    }
-
     init {
-        val jibriManager: JibriManager = mock()
+        val jibriManager: JibriManager = mockk(relaxed = true)
         val xmppConfig = XmppEnvironmentConfig(
             name = "xmppEnvName",
             xmppServerHosts = listOf("xmppServerHost1", "xmppServerHost2"),
@@ -112,31 +108,44 @@ class XmppApiTest : ShouldSpec() {
             usageTimeoutMins = 0,
             trustAllXmppCerts = true
         )
-        val jibriStatusManager: JibriStatusManager = mock()
+        val jibriStatusManager: JibriStatusManager = mockk(relaxed = true)
         // the initial status is idle
         val expectedStatus =
                 JibriStatus(ComponentBusyStatus.IDLE, OverallHealth(ComponentHealthStatus.HEALTHY, mapOf()))
-        whenever(jibriStatusManager.overallStatus).thenReturn(expectedStatus)
+        every { jibriStatusManager.overallStatus } returns expectedStatus
 
-        "xmppApi" {
+        beforeSpec {
+            val executorService: ExecutorService = mockk()
+            every { executorService.submit(any<Runnable>()) } answers {
+                firstArg<Runnable>().run()
+                CompletableFuture<Unit>()
+            }
+            TaskPools.setIoPool(executorService)
+        }
+
+        afterSpec {
+            TaskPools.resetIoPool()
+        }
+
+        context("xmppApi") {
             val xmppApi = XmppApi(jibriManager, listOf(xmppConfig), jibriStatusManager)
-            val mucClientManager: MucClientManager = mock()
+            val mucClientManager: MucClientManager = mockk(relaxed = true)
             // A dummy MucClient we'll use to be the one incoming messages are received on
-            val mucClient: MucClient = mock()
-            whenever(mucClient.id).thenReturn(xmppConfig.xmppServerHosts.first())
+            val mucClient: MucClient = mockk(relaxed = true)
+            every { mucClient.id } returns xmppConfig.xmppServerHosts.first()
             xmppApi.start(mucClientManager)
             should("add itself as the IQ listener for the MUC client manager") {
-                verify(mucClientManager).setIQListener(xmppApi)
+                verify { mucClientManager.setIQListener(xmppApi) }
             }
             should("create a muc client for each xmpp host") {
-                verify(mucClientManager, times(2)).addMucClient(any())
+                verify(exactly = 2) { mucClientManager.addMucClient(any()) }
             }
 
-            "when receiving a start recording iq" {
+            context("when receiving a start recording iq") {
                 val jibriIq = createJibriIq(JibriIq.Action.START, JibriIq.RecordingMode.FILE)
-                "and jibri is idle" {
-                    val statusHandler = argumentCaptor<JibriServiceStatusHandler>()
-                    whenever(jibriManager.startFileRecording(any(), any(), any(), statusHandler.capture())).thenAnswer { }
+                context("and jibri is idle") {
+                    val statusHandler = slot<JibriServiceStatusHandler>()
+                    every { jibriManager.startFileRecording(any(), any(), any(), capture(statusHandler)) } just Runs
                     val response = xmppApi.handleIq(jibriIq, mucClient)
                     should("send a pending response to the original IQ request") {
                         response shouldNotBe null
@@ -144,17 +153,42 @@ class XmppApiTest : ShouldSpec() {
                         response as JibriIq
                         response.status shouldBe JibriIq.Status.PENDING
                     }
-                    "after the service starts up" {
-                        statusHandler.firstValue(ComponentState.Running)
+                    context("after the service starts up") {
+                        statusHandler.captured(ComponentState.Running)
                         should("send a success response") {
-                            val sentStanzas = argumentCaptor<Stanza>()
-                            verify(mucClient).sendStanza(sentStanzas.capture())
-                            sentStanzas.allValues.size shouldBe 1
-                            (sentStanzas.firstValue as JibriIq).status shouldBe JibriIq.Status.ON
+                            val sentStanzas = mutableListOf<Stanza>()
+                            verify { mucClient.sendStanza(capture(sentStanzas)) }
+                            sentStanzas.size shouldBe 1
+                            sentStanzas.first().shouldBeInstanceOf<JibriIq> {
+                                it.status shouldBe JibriIq.Status.ON
+                            }
+                        }
+                        context("and it is stopped") {
+//                            whenever(jibriManager.stopService()) doAnswer {}
+                            val stopIq = createJibriIq(JibriIq.Action.STOP)
+                            val stopResponse = xmppApi.handleIq(stopIq, mucClient)
+                            should("respond correctly") {
+                                verify { jibriManager.stopService() }
+                                stopResponse shouldBeResponseTo stopIq
+                                stopResponse.shouldBeInstanceOf<JibriIq> {
+                                    it.status shouldBe JibriIq.Status.OFF
+                                }
+                            }
                         }
                     }
                 }
-                "with application data" {
+                context("and jibri is busy") {
+                    every { jibriManager.startFileRecording(any(), any(), any(), any()) } throws JibriBusyException()
+                    should("send an error IQ") {
+                        val response = xmppApi.handleIq(jibriIq, mucClient)
+                        response.shouldBeInstanceOf<JibriIq> {
+                            it.status shouldBe JibriIq.Status.OFF
+                            it.failureReason shouldBe JibriIq.FailureReason.BUSY
+                            it.shouldRetry shouldBe true
+                        }
+                    }
+                }
+                context("with application data") {
                     val fileMetaData = mapOf<Any, Any>(
                         "file_recording_metadata" to mapOf<Any, Any>(
                             "upload_credentials" to mapOf<Any, Any>(
@@ -167,17 +201,17 @@ class XmppApiTest : ShouldSpec() {
                     val jsonString = jacksonObjectMapper().writeValueAsString(appData)
                     jibriIq.appData = jsonString
 
-                    val serviceParams = argumentCaptor<ServiceParams>()
-                    whenever(jibriManager.startFileRecording(serviceParams.capture(), any(), any(), any())).thenAnswer { }
+                    val serviceParams = mutableListOf<ServiceParams>()
+                    every { jibriManager.startFileRecording(capture(serviceParams), any(), any(), any()) } just Runs
                     xmppApi.handleIq(jibriIq, mucClient)
                     should("parse and pass the app data") {
-                        serviceParams.allValues.size shouldBe 1
-                        serviceParams.firstValue.appData shouldBe appData
+                        serviceParams.size shouldBe 1
+                        serviceParams.first().appData shouldBe appData
                     }
                 }
-                "from a muc client it doesn't recognize" {
-                    val unknownMucClient: MucClient = mock()
-                    whenever(unknownMucClient.id).thenReturn("unknown name")
+                context("from a muc client it doesn't recognize") {
+                    val unknownMucClient: MucClient = mockk()
+                    every { unknownMucClient.id } returns "unknown name"
                     val result = xmppApi.handleIq(jibriIq, unknownMucClient)
                     result.error shouldNotBe null
                     result.error.condition shouldBe XMPPError.Condition.bad_request
@@ -243,4 +277,9 @@ class XmppApiTest : ShouldSpec() {
             }
         }
     }
+}
+
+private infix fun IQ.shouldBeResponseTo(req: IQ) {
+    from.toString() shouldBe req.to.toString()
+    to.toString() shouldBe req.from.toString()
 }
