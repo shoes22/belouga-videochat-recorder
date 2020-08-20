@@ -217,11 +217,11 @@ class XmppApiTest : ShouldSpec() {
                     result.error.condition shouldBe XMPPError.Condition.bad_request
                 }
             }
-            "when receiving a start streaming iq" {
+            context("when receiving a start streaming iq") {
                 val jibriIq = createJibriIq(JibriIq.Action.START, JibriIq.RecordingMode.STREAM)
                 val streamingParams = argumentCaptor<StreamingParams>()
                 whenever(jibriManager.startStreaming(any(), streamingParams.capture(), any(), any())).thenAnswer {}
-                "for a YouTube stream" {
+                context("for a YouTube stream") {
                     jibriIq.streamId = "youtube_stream_id"
                     jibriIq.setYouTubeBroadcastId("youtube_broadcast_id")
                     val response = xmppApi.handleIq(jibriIq, mucClient)
@@ -239,7 +239,7 @@ class XmppApiTest : ShouldSpec() {
                         serviceInfo.broadcastId shouldBe "youtube_broadcast_id"
                     }
                 }
-                "for a generic RTMP service" {
+                context("for a generic RTMP service") {
                     val appData = AppData(rtmpUrl = "http://rtmp_url")
                     val jsonString = jacksonObjectMapper().writeValueAsString(appData)
                     jibriIq.appData = jsonString
@@ -257,7 +257,7 @@ class XmppApiTest : ShouldSpec() {
                         serviceInfo.rtmpUrl shouldBe "http://rtmp_url"
                     }
                 }
-                "without a stream service properly configured" {
+                context("without a stream service properly configured") {
                     val response = xmppApi.handleIq(jibriIq, mucClient)
                     should("send a pending response to the original IQ request") {
                         response shouldNotBe null
