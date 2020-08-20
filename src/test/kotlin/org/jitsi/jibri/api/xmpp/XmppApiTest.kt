@@ -232,7 +232,7 @@ class XmppApiTest : ShouldSpec() {
                         response.status shouldBe JibriIq.Status.PENDING
                     }
                     should("pass the proper StreamingServiceInfo") {
-                        val serviceInfo = streamingParams.captured(streamingServiceInfo)
+                        val serviceInfo = streamingParams.first().streamingServiceInfo
                         serviceInfo.shouldBeInstanceOf<YouTube>()
                         serviceInfo as YouTube
                         serviceInfo.streamKey shouldBe "youtube_stream_id"
