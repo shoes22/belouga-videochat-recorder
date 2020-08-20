@@ -219,7 +219,7 @@ class XmppApiTest : ShouldSpec() {
             }
             context("when receiving a start streaming iq") {
                 val jibriIq = createJibriIq(JibriIq.Action.START, JibriIq.RecordingMode.STREAM)
-                val streamingParams = slot<StreamingParams>()
+                val streamingParams = mutableListOf<StreamingParams>()
                 every { jibriManager.startStreaming(any(), capture(streamingParams), any(), any())} just Runs
                 context("for a YouTube stream") {
                     jibriIq.streamId = "youtube_stream_id"
@@ -251,7 +251,7 @@ class XmppApiTest : ShouldSpec() {
                         response.status shouldBe JibriIq.Status.PENDING
                     }
                     should("pass the proper StreamingServiceInfo") {
-                        val serviceInfo = streamingParams.captured(streamingServiceInfo)
+                        val serviceInfo = streamingParams.first().streamingServiceInfo
                         serviceInfo.shouldBeInstanceOf<GenericRtmpService>()
                         serviceInfo as GenericRtmpService
                         serviceInfo.rtmpUrl shouldBe "http://rtmp_url"
@@ -259,20 +259,12 @@ class XmppApiTest : ShouldSpec() {
                 }
                 context("without a stream service properly configured") {
                     val response = xmppApi.handleIq(jibriIq, mucClient)
-                    should("send a pending response to the original IQ request") {
+                    should("send an error IQ") {
                         response shouldNotBe null
                         response should beInstanceOf<JibriIq>()
                         response as JibriIq
-                        response.status shouldBe JibriIq.Status.PENDING
-                    }
-                    should("send an error IQ after") {
-                        val sentStanzas = mutableListOf<Stanza>()
-                        verify { mucClient.sendStanza(capture(sentStanzas)) }
-                        sentStanzas.size shouldBe 1
-                        sentStanzas.first().shouldBeInstanceOf<JibriIq> {
-                            it.status shouldBe JibriIq.Status.OFF
-                            it.failureReason shouldBe JibriIq.FailureReason.ERROR
-                        }
+                        response.status shouldBe JibriIq.Status.OFF
+                        response.failureReason shouldBe JibriIq.FailureReason.ERROR
                     }
                 }
             }
