@@ -219,8 +219,8 @@ class XmppApiTest : ShouldSpec() {
             }
             context("when receiving a start streaming iq") {
                 val jibriIq = createJibriIq(JibriIq.Action.START, JibriIq.RecordingMode.STREAM)
-                val streamingParams = argumentCaptor<StreamingParams>()
-                whenever(jibriManager.startStreaming(any(), streamingParams.capture(), any(), any())).thenAnswer {}
+                val streamingParams = slot<StreamingParams>()
+                every { jibriManager.startStreaming(any(), capture(streamingParams), any(), any())} just Runs
                 context("for a YouTube stream") {
                     jibriIq.streamId = "youtube_stream_id"
                     jibriIq.setYouTubeBroadcastId("youtube_broadcast_id")
@@ -232,7 +232,7 @@ class XmppApiTest : ShouldSpec() {
                         response.status shouldBe JibriIq.Status.PENDING
                     }
                     should("pass the proper StreamingServiceInfo") {
-                        val serviceInfo = streamingParams.firstValue.streamingServiceInfo
+                        val serviceInfo = streamingParams.captured(streamingServiceInfo)
                         serviceInfo.shouldBeInstanceOf<YouTube>()
                         serviceInfo as YouTube
                         serviceInfo.streamKey shouldBe "youtube_stream_id"
@@ -251,7 +251,7 @@ class XmppApiTest : ShouldSpec() {
                         response.status shouldBe JibriIq.Status.PENDING
                     }
                     should("pass the proper StreamingServiceInfo") {
-                        val serviceInfo = streamingParams.firstValue.streamingServiceInfo
+                        val serviceInfo = streamingParams.captured(streamingServiceInfo)
                         serviceInfo.shouldBeInstanceOf<GenericRtmpService>()
                         serviceInfo as GenericRtmpService
                         serviceInfo.rtmpUrl shouldBe "http://rtmp_url"
@@ -266,12 +266,13 @@ class XmppApiTest : ShouldSpec() {
                         response.status shouldBe JibriIq.Status.PENDING
                     }
                     should("send an error IQ after") {
-                        val sentStanzas = argumentCaptor<Stanza>()
-                        verify(mucClient).sendStanza(sentStanzas.capture())
-                        sentStanzas.allValues.size shouldBe 1
-                        val sentStanza = sentStanzas.firstValue as JibriIq
-                        sentStanza.status shouldBe JibriIq.Status.OFF
-                        sentStanza.failureReason shouldBe JibriIq.FailureReason.ERROR
+                        val sentStanzas = mutableListOf<Stanza>()
+                        verify { mucClient.sendStanza(capture(sentStanzas)) }
+                        sentStanzas.size shouldBe 1
+                        sentStanzas.first().shouldBeInstanceOf<JibriIq> {
+                            it.status shouldBe JibriIq.Status.OFF
+                            it.failureReason shouldBe JibriIq.FailureReason.ERROR
+                        }
                     }
                 }
             }
