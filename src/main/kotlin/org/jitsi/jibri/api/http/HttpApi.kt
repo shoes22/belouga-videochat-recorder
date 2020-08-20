@@ -149,13 +149,14 @@ class HttpApi(
                 // If it's a stream, it must have the callLoginParams set
                 val callLoginParams = startServiceParams.callLoginParams
                     ?: throw IllegalStateException("Call login params missing")
+                val streamingServiceInfo = YouTube(youTubeStreamKey)
                 jibriManager.startStreaming(
                     ServiceParams(usageTimeoutMinutes = 0),
                     StreamingParams(
                         startServiceParams.callParams,
                         startServiceParams.sessionId,
                         callLoginParams,
-                        youTubeStreamKey
+                        streamingServiceInfo
                     ),
                     environmentContext = null
                 )
