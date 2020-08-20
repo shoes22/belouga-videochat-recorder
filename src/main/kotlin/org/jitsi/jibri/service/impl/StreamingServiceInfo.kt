@@ -19,7 +19,7 @@ package org.jitsi.jibri.service.impl
 /**
  * Needed information for the service we'll be streaming to
  */
-class StreamingServiceInfo {
+sealed class StreamingServiceInfo {
     abstract val rtmpUrl: String
     /**
      * A URL at which the stream being sent can be viewed
