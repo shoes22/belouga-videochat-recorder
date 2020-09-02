@@ -36,9 +36,9 @@ data class CallUrlInfo(
     val callUrl: String
         get() {
             return if (urlParams.isNotEmpty()) {
-                "$baseUrl/$callName#${urlParams.joinToString("&")}"
+                "$baseUrl/$callName?record=true#${urlParams.joinToString("&")}"
             } else {
-                "$baseUrl/$callName"
+                "$baseUrl/$callName?record=true"
             }
         }
 
