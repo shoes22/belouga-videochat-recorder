@@ -36,7 +36,7 @@ class CallUrlInfoTest : ShouldSpec() {
                 should("assign the fields correctly") {
                     info.baseUrl shouldBe "baseUrl"
                     info.callName shouldBe "callName"
-                    info.callUrl shouldBe "baseUrl/callName"
+                    info.callUrl shouldBe "baseUrl/callName?record=true"
                 }
             }
             context("with url params") {
@@ -44,7 +44,7 @@ class CallUrlInfoTest : ShouldSpec() {
                 should("assign the fields correctly") {
                     info.baseUrl shouldBe "baseUrl"
                     info.callName shouldBe "callName"
-                    info.callUrl shouldBe "baseUrl/callName#one&two&three"
+                    info.callUrl shouldBe "baseUrl/callName?record=true#one&two&three"
                 }
             }
         }
