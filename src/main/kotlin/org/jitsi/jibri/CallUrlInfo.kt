@@ -36,9 +36,9 @@ data class CallUrlInfo(
     val callUrl: String
         get() {
             return if (urlParams.isNotEmpty()) {
-                "$baseUrl/$callName?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJiZWxvdWdhY2FrZSIsImlzcyI6ImJlbG91Z2FjYWtlIiwic3ViIjoibGl2ZS5zdGFnaW5nLmJlbG91Z2Eub3JnIiwicm9vbSI6IioiLCJleHAiOjE2MzAwMDY5MjMsImd1ZXN0Ijp0cnVlLCJjb250ZXh0Ijp7ImZlYXR1cmVzIjp7InNjcmVlbi1zaGFyaW5nIjoidHJ1ZSIsInlvdXR1YmUiOiJ0cnVlIiwibGl2ZXN0cmVhbWluZyI6ImRpc2FibGVkIiwiaXNTdXBlclVzZXIiOiJkaXNhYmxlZCIsImNsb3NlZGNhcHRpb25zIjoiZGlzYWJsZWQiLCJyZWNvcmRpbmciOiJkaXNhYmxlZCJ9fX0.c-S5MbwHB0tHMM7nUaLNEF6rnbd2b4L9UniIfDEHOHw#${urlParams.joinToString("&")}"
+                "$baseUrl/$callName?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJiZWxvdWdhY2FrZSIsImlzcyI6ImJlbG91Z2FjYWtlIiwic3ViIjoibGl2ZS5zdGFnaW5nLmJlbG91Z2Eub3JnIiwicm9vbSI6IioiLCJleHAiOjE2MzAwMDY5MjMsImd1ZXN0IjpmYWxzZSwiY29udGV4dCI6eyJmZWF0dXJlcyI6eyJzY3JlZW4tc2hhcmluZyI6InRydWUiLCJ5b3V0dWJlIjoidHJ1ZSIsImxpdmVzdHJlYW1pbmciOiJkaXNhYmxlZCIsImlzU3VwZXJVc2VyIjoiZGlzYWJsZWQiLCJjbG9zZWRjYXB0aW9ucyI6ImRpc2FibGVkIiwicmVjb3JkaW5nIjoiZGlzYWJsZWQifX19.2NN45rjd_aTfWVD_IkPFLpdkW0WnFt-T7ACSfk4-1HM#${urlParams.joinToString("&")}"
             } else {
-                "$baseUrl/$callName?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJiZWxvdWdhY2FrZSIsImlzcyI6ImJlbG91Z2FjYWtlIiwic3ViIjoibGl2ZS5zdGFnaW5nLmJlbG91Z2Eub3JnIiwicm9vbSI6IioiLCJleHAiOjE2MzAwMDY5MjMsImd1ZXN0Ijp0cnVlLCJjb250ZXh0Ijp7ImZlYXR1cmVzIjp7InNjcmVlbi1zaGFyaW5nIjoidHJ1ZSIsInlvdXR1YmUiOiJ0cnVlIiwibGl2ZXN0cmVhbWluZyI6ImRpc2FibGVkIiwiaXNTdXBlclVzZXIiOiJkaXNhYmxlZCIsImNsb3NlZGNhcHRpb25zIjoiZGlzYWJsZWQiLCJyZWNvcmRpbmciOiJkaXNhYmxlZCJ9fX0.c-S5MbwHB0tHMM7nUaLNEF6rnbd2b4L9UniIfDEHOHw"
+                "$baseUrl/$callName?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJiZWxvdWdhY2FrZSIsImlzcyI6ImJlbG91Z2FjYWtlIiwic3ViIjoibGl2ZS5zdGFnaW5nLmJlbG91Z2Eub3JnIiwicm9vbSI6IioiLCJleHAiOjE2MzAwMDY5MjMsImd1ZXN0IjpmYWxzZSwiY29udGV4dCI6eyJmZWF0dXJlcyI6eyJzY3JlZW4tc2hhcmluZyI6InRydWUiLCJ5b3V0dWJlIjoidHJ1ZSIsImxpdmVzdHJlYW1pbmciOiJkaXNhYmxlZCIsImlzU3VwZXJVc2VyIjoiZGlzYWJsZWQiLCJjbG9zZWRjYXB0aW9ucyI6ImRpc2FibGVkIiwicmVjb3JkaW5nIjoiZGlzYWJsZWQifX19.2NN45rjd_aTfWVD_IkPFLpdkW0WnFt-T7ACSfk4-1HM"
             }
         }
 
