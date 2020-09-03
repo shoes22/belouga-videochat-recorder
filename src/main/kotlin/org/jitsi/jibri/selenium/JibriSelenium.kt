@@ -236,7 +236,7 @@ class JibriSelenium(
         // These are all blocking calls, so offload the work to another thread
         TaskPools.ioPool.submit {
             try {
-                HomePage(chromeDriver).visit(callUrlInfo.baseUrl)
+                HomePage(chromeDriver).visit("${callUrlInfo.baseUrl}/test?dumb=123")
 
                 val localStorageValues = mutableMapOf(
                         "displayname" to jibriSeleniumOptions.displayName,
